@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  gateway:
+    build: ./gateway
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - JWT_SECRET=${JWT_SECRET}
+      - USERS_URL=http://users:5001
+      - PRODUCTS_URL=http://products:5002
+      - PRODUCTS_REPLICA_URL=http://products-replica:5012
+      - ORDERS_URL=http://orders:5003
+    depends_on:
+      - users
+      - products
+      - products-replica
+      - orders
+
+  users:
+    build: ./users
+    ports:
+      - "5001:5001"
+    environment:
+      - PORT=5001
+      - JWT_SECRET=${JWT_SECRET}
+
+  products:
+    build: ./products
+    ports:
+      - "5002:5002"
+    environment:
+      - PORT=5002
+      - JWT_SECRET=${JWT_SECRET}
+      - REPLICA=false
+
+  products-replica:
+    build: ./products
+    ports:
+      - "5012:5012"
+    environment:
+      - PORT=5012
+      - JWT_SECRET=${JWT_SECRET}
+      - REPLICA=true
+
+  orders:
+    build: ./orders
+    ports:
+      - "5003:5003"
+    environment:
+      - PORT=5003
+      - JWT_SECRET=${JWT_SECRET}
+      - USERS_URL=http://users:5001
+      - PRODUCTS_URL=http://products:5002
