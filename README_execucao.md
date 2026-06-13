@@ -80,7 +80,9 @@ cd gateway
 node index.js
 # deve exibir: [gateway] running on port 3000
 ```
-## Execução com Docker Compose (alternativa)
+---
+
+## Execução com Docker Compose 
 
 Se tiver o Docker instalado, é possível subir toda a infraestrutura com um único comando, sem precisar abrir 5 terminais nem instalar dependências manualmente.
 
@@ -287,4 +289,3 @@ gateway/logs/heartbeat.log
 
 
 ---
-
