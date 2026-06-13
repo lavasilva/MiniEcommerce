@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>mini e-commerce — monitoramento</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #ede6da; min-height: 100vh; padding: 2rem; }
+.dash { max-width: 900px; margin: 0 auto; background: #f4ede2; border-radius: 16px; padding: 2rem; }
+.top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
+.top h1 { font-size: 18px; font-weight: 500; color: #4a3420; display: flex; align-items: center; gap: 8px; }
+.top h1 i { font-size: 18px; color: #8a6d4b; }
+.btn { background: #ece0cf; border: 1px solid #c4a882; border-radius: 10px; padding: 8px 16px; font-size: 13px; color: #4a3420; cursor: pointer; font-family: inherit; display: inline-flex; align-items: center; gap: 6px; }
+.btn:hover { background: #d8c0a0; border-color: #a8845a; }
+.btn.green { color: #4d6b3c; border-color: #a8c090; }
+.btn.green:hover { background: #d8c0a0; border-color: #a8845a; color: #4a3420; }
+.metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 1.5rem; }
+.metric { background: #ece0cf; border-radius: 10px; padding: 1rem; }
+.metric .label { font-size: 12px; color: #8a7355; margin-bottom: 6px; }
+.metric .value { font-size: 22px; font-weight: 500; color: #4a3420; }
+.metric .sub { font-size: 11px; color: #a8916f; margin-top: 2px; }
+.section-title { font-size: 13px; font-weight: 500; color: #7a6044; margin-bottom: 10px; }
+.services { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 1.5rem; }
+.svc-card { background: #fbf6ee; border: 0.5px solid #d8c5a8; border-radius: 12px; padding: 1rem 1.25rem; }
+.svc-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.svc-name { font-size: 14px; font-weight: 500; color: #4a3420; display: flex; align-items: center; gap: 8px; }
+.svc-name i { font-size: 16px; color: #8a6d4b; }
+.badge { font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 500; display: flex; align-items: center; gap: 5px; }
+.badge.up { background: #e3ecd9; color: #4d6b3c; }
+.badge.down { background: #f2ddd4; color: #a04a2f; }
+.dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+.dot.up { background: #6b9b54; } .dot.down { background: #c0593a; }
+.svc-port { font-size: 12px; color: #a8916f; font-family: monospace; }
+.svc-meta { display: flex; gap: 1rem; margin-top: 8px; }
+.svc-meta span { font-size: 12px; color: #8a7355; }
+.svc-meta span b { color: #4a3420; font-weight: 500; }
+.controls { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1.5rem; }
+.log-box { background: #2e2419; border-radius: 12px; padding: 1rem 1.25rem; max-height: 160px; overflow-y: auto; font-family: monospace; margin-bottom: 1.5rem; }
+.log-entry { font-size: 12px; line-height: 1.7; }
+.log-entry .ts { color: #8f7b5e; }
+.log-entry .msg.ok { color: #9cc47e; }
+.log-entry .msg.err { color: #e09478; }
+.log-entry .msg.info { color: #c9b08f; }
+.search { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.search input { flex: 1; min-width: 160px; height: 36px; background: #e6d6bf; border: 1px solid #c4a882; border-radius: 8px; padding: 0 12px; font-size: 12px; color: #4a3420; font-family: monospace; }
+.search input::placeholder { color: #9c8567; }
+table { width: 100%; border-collapse: collapse; }
+th { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: #a8916f; text-align: left; padding: 6px 8px; border-bottom: 0.5px solid #d8c5a8; }
+td { font-size: 12px; color: #6b5640; padding: 7px 8px; border-bottom: 0.5px solid #e3d4be; }
+.empty { text-align: center; color: #a8916f; font-size: 12px; padding: 1rem; }
+</style>
+</head>
+<body>
+<div class="dash">
+  <div class="top">
+    <h1><i class="ti ti-layout-dashboard"></i> mini e-commerce — monitoramento</h1>
+    <button class="btn" onclick="runHeartbeat()"><i class="ti ti-refresh"></i> simular heartbeat</button>
+  </div>
+
+  <div class="metrics">
+    <div class="metric"><div class="label">serviços ativos</div><div class="value" id="m-ativos">—</div><div class="sub">incluindo réplica</div></div>
+    <div class="metric"><div class="label">último heartbeat</div><div class="value" id="m-hb" style="font-size:15px;padding-top:4px;">—</div><div class="sub">intervalo: 5s</div></div>
+    <div class="metric"><div class="label">falhas detectadas</div><div class="value" id="m-falhas">0</div><div class="sub">últimos 60s</div></div>
+    <div class="metric"><div class="label">uptime</div><div class="value" id="m-uptime">—</div><div class="sub">desde o boot</div></div>
+  </div>
+
+  <p class="section-title">status dos serviços</p>
+  <div class="services" id="services"></div>
+
+  <p class="section-title">controles de teste</p>
+  <div class="controls">
+    <button class="btn" onclick="killSvc('users')">derrubar usuários</button>
+    <button class="btn" onclick="killSvc('products')">derrubar produtos</button>
+    <button class="btn" onclick="killSvc('orders')">derrubar pedidos</button>
+    <button class="btn green" onclick="restoreAll()">restaurar tudo</button>
+  </div>
+
+  <p class="section-title">log de eventos</p>
+  <div class="log-box" id="log-list"></div>
+
+  <p class="section-title">buscar pedidos</p>
+  <div class="search">
+    <input id="in-uid" placeholder="userId" />
+    <input id="in-jwt" placeholder="JWT token" />
+    <button class="btn" onclick="fetchOrders()">buscar pedidos</button>
+  </div>
+  <table>
+    <thead><tr><th>id</th><th>produto</th><th>qtd</th><th>total</th><th>status</th><th>criado em</th></tr></thead>
+    <tbody id="ord-body"><tr><td colspan="6" class="empty">nenhum pedido carregado</td></tr></tbody>
+  </table>
+</div>
+
+<script>
+const GATEWAY = '';
+const svcDefs = [
+  { id: 'gateway', label: 'gateway', port: ':3000', icon: 'ti-route' },
+  { id: 'users',   label: 'users',   port: ':5001', icon: 'ti-users' },
+  { id: 'products',label: 'products + réplica', port: ':5002 / :5012', icon: 'ti-package' },
+  { id: 'orders',  label: 'orders',  port: ':5003', icon: 'ti-shopping-cart' },
+];
+let state = { svc: {}, checks: 0, fails: 0 };
+svcDefs.forEach(s => state.svc[s.id] = { alive: true, fails: 0, lat: '—' });
+
+function ts() { return new Date().toLocaleTimeString('pt-BR'); }
+
+function addLog(msg, type) {
+  const list = document.getElementById('log-list');
+  const el = document.createElement('div');
+  el.className = 'log-entry';
+  el.innerHTML = `<span class="ts">[${ts()}]</span> <span class="msg ${type}">${msg}</span>`;
+  list.prepend(el);
+  while (list.children.length > 50) list.removeChild(list.lastChild);
+}
+
+function renderServices() {
+  const c = document.getElementById('services');
+  c.innerHTML = '';
+  svcDefs.forEach(s => {
+    const st = state.svc[s.id];
+    const el = document.createElement('div');
+    el.className = 'svc-card';
+    el.innerHTML = `
+      <div class="svc-header">
+        <span class="svc-name"><i class="ti ${s.icon}"></i> ${s.label}</span>
+        <span class="badge ${st.alive ? 'up' : 'down'}"><span class="dot ${st.alive ? 'up' : 'down'}"></span>${st.alive ? 'online' : 'offline'}</span>
+      </div>
+      <div class="svc-port">${s.port}</div>
+      <div class="svc-meta">
+        <span>latência <b>${st.lat}</b></span>
+        <span>falhas <b>${st.fails}</b></span>
+      </div>`;
+    c.appendChild(el);
+  });
+}
+
+function updateMetrics() {
+  const up = svcDefs.filter(s => state.svc[s.id].alive).length;
+  document.getElementById('m-ativos').textContent = up + ' / 4';
+  document.getElementById('m-falhas').textContent = state.fails;
+  document.getElementById('m-hb').textContent = ts();
+  const pct = state.checks > 0 ? Math.round((state.checks - state.fails) / state.checks * 100) : 100;
+  document.getElementById('m-uptime').textContent = Math.max(0, pct) + '%';
+}
+
+async function runHeartbeat() {
+  state.checks++;
+  try {
+    const t0 = Date.now();
+    const r = await fetch(GATEWAY + '/status', { signal: AbortSignal.timeout(2000) });
+    const data = await r.json();
+    const lat = Date.now() - t0;
+    state.svc.gateway.alive = true;
+    state.svc.gateway.lat = lat + 'ms';
+    for (const [name, info] of Object.entries(data.services)) {
+      if (state.svc[name]) {
+        const wasDown = !state.svc[name].alive;
+        state.svc[name].alive = info.alive;
+        if (!info.alive) { state.svc[name].fails++; state.fails++; }
+        if (wasDown && info.alive) addLog('RECOVERY service=' + name + ' voltou a responder', 'ok');
+      }
+    }
+    const up = svcDefs.filter(s => state.svc[s.id].alive).length;
+    addLog('HEARTBEAT gateway ok — ' + up + ' serviços ativos', 'ok');
+  } catch {
+    state.svc.gateway.alive = false;
+    state.svc.gateway.fails++;
+    state.fails++;
+    addLog('FAILURE gateway inacessível — verifique se os serviços estão rodando', 'err');
+  }
+  renderServices();
+  updateMetrics();
+}
+
+async function killSvc(id) {
+  state.svc[id].alive = false;
+  state.svc[id].fails++;
+  state.fails++;
+  addLog('FAILURE service=' + id + ' derrubado (tentativa 1)', 'err');
+  setTimeout(() => addLog('FAILURE service=' + id + ' sem resposta (tentativa 2)', 'err'), 700);
+  renderServices();
+  updateMetrics();
+}
+
+function restoreAll() {
+  svcDefs.forEach(s => { state.svc[s.id].alive = true; state.svc[s.id].lat = '—'; });
+  addLog('RECOVERY todos os serviços restaurados', 'ok');
+  renderServices();
+  updateMetrics();
+  runHeartbeat();
+}
+
+async function fetchOrders() {
+  const uid = document.getElementById('in-uid').value.trim();
+  const jwt = document.getElementById('in-jwt').value.trim();
+  const body = document.getElementById('ord-body');
+  if (!uid || !jwt) { body.innerHTML = '<tr><td colspan="6" class="empty">preencha userId e JWT</td></tr>'; return; }
+  try {
+    const r = await fetch(GATEWAY + '/orders/' + uid, {
+      headers: { authorization: 'Bearer ' + jwt },
+      signal: AbortSignal.timeout(3000)
+    });
+    if (!r.ok) { body.innerHTML = `<tr><td colspan="6" class="empty">erro ${r.status} — verifique o userId e o token</td></tr>`; return; }
+    const orders = await r.json();
+    if (!orders.length) { body.innerHTML = '<tr><td colspan="6" class="empty">nenhum pedido para este usuário</td></tr>'; return; }
+    body.innerHTML = orders.map(o =>
+      `<tr><td>${o.id.slice(0,8)}</td><td>${o.productName || '—'}</td><td>${o.quantity}</td><td>R$ ${Number(o.total).toFixed(2)}</td><td>${o.status}</td><td>${new Date(o.createdAt).toLocaleString('pt-BR')}</td></tr>`
+    ).join('');
+    addLog('busca de pedidos: ' + orders.length + ' resultado(s) para ' + uid.slice(0,8) + '...', 'info');
+  } catch {
+    body.innerHTML = '<tr><td colspan="6" class="empty">gateway inacessível</td></tr>';
+  }
+}
+
+renderServices();
+updateMetrics();
+addLog('BOOT monitor iniciado', 'ok');
+runHeartbeat();
+setInterval(runHeartbeat, 5000);
+</script>
+</body>
+</html>
