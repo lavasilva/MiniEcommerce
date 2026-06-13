@@ -34,6 +34,7 @@ services:
       - PORT=5002
       - JWT_SECRET=${JWT_SECRET}
       - REPLICA=false
+      - REPLICA_URL=http://products-replica:5012
 
   products-replica:
     build: ./products
@@ -43,6 +44,7 @@ services:
       - PORT=5012
       - JWT_SECRET=${JWT_SECRET}
       - REPLICA=true
+      - REPLICA_URL=http://products:5002
 
   orders:
     build: ./orders
